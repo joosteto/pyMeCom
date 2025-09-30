@@ -17,6 +17,7 @@ TEC_PARAMETERS = [
     {"id": 1011, "name": "Ramp Object Temperature", "format": "FLOAT32"},
     {"id": 1020, "name": "Actual Output Current", "format": "FLOAT32"},
     {"id": 1021, "name": "Actual Output Voltage", "format": "FLOAT32"},
+    {"id": 1102, "name": "Actual Fan Speed", "format": "FLOAT32"},
     {"id": 1200, "name": "Temperature is Stable", "format": "INT32"},
     {"id": 3002, "name": "Proximity Width", "format": "FLOAT32"},
     {"id": 3003, "name": "Coarse Temp Ramp", "format": "FLOAT32"},
@@ -38,6 +39,10 @@ TEC_PARAMETERS = [
     {"id": 6101, "name": "GPIO Level Assignment", "format": "INT32"},
     {"id": 6102, "name": "GPIO Hardware Configuration", "format": "INT32"},
     {"id": 6103, "name": "GPIO Channel", "format": "INT32"},
+
+    {"id": 6200, "name": "Fan Control Enable", "format": "INT32"},
+    {"id": 6220, "name": "Fan 0 Speed", "format": "INT32"},
+    {"id": 6221, "name": "Fan 100 Speed", "format": "INT32"},
 
     {"id": 6300, "name": "Object Source Selection", "format": "INT32"},
     {"id": 6302, "name": "Observe Mode", "format": "INT32"},
