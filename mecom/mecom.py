@@ -1110,9 +1110,9 @@ if __name__ == "__main__":
             except ValueError:
                 try:
                 parameter=pl.get_by_name(vs)
-            except UnknownParameter as inst:
-                print(f'UnknownParameter: "{vs}"')
-                return
+                except UnknownParameter:
+                    print(f'Unknown parameter: "{vs}"')
+                    return None
             val=mc.get_parameter(parameter_id=parameter.id, *args, **kwargs)
             print(f'{parameter.id:4d}: {parameter.name:20s} = {val}')
 
