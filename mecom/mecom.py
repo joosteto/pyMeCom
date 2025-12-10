@@ -112,7 +112,11 @@ class MeFrame(object):
     """
     Basis structure of a MeCom frame as defined in the specs.
     """
-    _TYPES = {"UINT8": "!H", "UINT16": "!L", "INT32": "!i", "FLOAT32": "!f"}
+    _TYPES = {"UINT8":   "!H",
+              "UINT16":  "!L",
+              "INT32":   "!i",
+              "FLOAT32": "!f",
+              "LATIN1":  "!s"}
     _SOURCE = ""
     _EOL = "\r"  # carriage return
 
@@ -225,6 +229,7 @@ class Query(MeFrame):
         self._RESPONSE_FORMAT = None
 
         self.ADDRESS = address
+        self.dataformat=parameter.format
         if parameter is not None:
             # UNIT16 4 hex digits
             self.PAYLOAD.append("{:04X}".format(parameter.id))
@@ -251,6 +256,9 @@ class Query(MeFrame):
             self.RESPONSE = DeviceError()
             self.RESPONSE.decompose(response_frame)
         # nope it's a response to a parameter query
+        else:
+            if self.dataformat == 'LATIN1':
+                self.RESPONSE = VBResponse(self._RESPONSE_FORMAT)
         else:
             self.RESPONSE = VRResponse(self._RESPONSE_FORMAT)
             # if the checksum is wrong, this statement raises
@@ -293,6 +301,32 @@ class VR(Query):
         assert parameter.format in self._TYPES.keys()
 
         self._RESPONSE_FORMAT = parameter.format
+
+class VB(Query):
+    """
+    Implementing query to get a parameter from the device (?VR).
+    """
+    _PAYLOAD_START = "?VB"
+
+    def __init__(self, parameter, address=0, parameter_instance=1, start_position=0, max_nread=255):
+        """
+        Create a query to get a parameter value.
+        :param parameter: Parameter
+        :param address: int
+        :param parameter_instance: int
+        """
+        # init header (equal for get and set queries
+        super(VB, self).__init__(parameter=parameter,
+                                 address=address,
+                                 parameter_instance=parameter_instance)
+        # initialize response
+        assert parameter.format in self._TYPES.keys()
+
+        self.PAYLOAD.append("{:08X}".format(start_position))
+        self.PAYLOAD.append("{:04X}".format(max_nread))
+
+        self._RESPONSE_FORMAT = parameter.format
+        self.expected_response=VBResponse
 
 
 class VS(Query):
@@ -411,6 +445,36 @@ class VRResponse(MeFrame):
         self.PAYLOAD = [unpack(self._RESPONSE_FORMAT, bytes.fromhex(frame[7:15]))[0]]  # convert hex to float or int
         self.crc(int(frame[-4:], 16))  # sets crc or raises
 
+class VBResponse(MeFrame):
+    """
+    Frame for the device response to a VR() query.
+    """
+    _SOURCE = "!"
+    _RESPONSE_FORMAT = None
+
+    def __init__(self, response_format):
+        """
+        The format of the response is given via VR.set_response()
+        :param response_format: str
+        """
+        super(VBResponse, self).__init__()
+        self._RESPONSE_FORMAT = self._TYPES[response_format]
+
+    def decompose(self, frame_bytes):
+        """
+        Takes bytes as input and builds the instance.
+        :param frame_bytes: bytes
+        :return:
+        """
+        assert self._RESPONSE_FORMAT is not None
+        frame_bytes = self._SOURCE.encode() + frame_bytes
+        self._decompose_header(frame_bytes)
+
+        frame = frame_bytes.decode()
+        self.PAYLOAD = [bytes.fromhex(frame[11:-4]).decode('ascii')]
+
+        #CRC error???
+        #self.crc(int(frame[-4:], 16))  # sets crc or raises
 
 class ACK(MeFrame):
     """
@@ -588,12 +652,13 @@ class MeComCommon:
         # search in DataFrame returns a dict
         parameter = self._find_parameter(parameter_name, parameter_id)
 
+        if parameter.format == "LATIN1":
+            # execute query
+            vb = self._execute(VB(parameter=parameter, start_position=0, max_nread=1023, *args, **kwargs))
+            return vb
+        else:
         # execute query
         vr = self._execute(VR(parameter=parameter, *args, **kwargs))
-
-        # print(vr.PAYLOAD)
-        # print(vr.RESPONSE.PAYLOAD)
-        # return the query with response
         return vr
 
     def _get_raw(self, parameter_id, parameter_format, *args, **kwargs):
