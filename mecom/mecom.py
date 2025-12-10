@@ -259,8 +259,8 @@ class Query(MeFrame):
         else:
             if self.dataformat == 'LATIN1':
                 self.RESPONSE = VBResponse(self._RESPONSE_FORMAT)
-        else:
-            self.RESPONSE = VRResponse(self._RESPONSE_FORMAT)
+            else:
+                self.RESPONSE = VRResponse(self._RESPONSE_FORMAT)
             # if the checksum is wrong, this statement raises
             self.RESPONSE.decompose(response_frame)
 
@@ -273,7 +273,7 @@ class EmptyResponse(MeFrame):
     """
     No response.
     """
-    
+
     def __init__(self):
         """
         Creates an instance of an empty response.
@@ -352,7 +352,7 @@ class VS(Query):
         # cast the value parameter to the correct type
         conversions = {'FLOAT32': float, 'INT32': int}
         assert parameter.format in conversions.keys()
-        
+
         value=conversions[parameter.format](value)
 
         # the set value
@@ -372,7 +372,7 @@ class RS(Query):
         :param address: int
         :param parameter_instance: int
         """
-        
+
         # init header
         super(RS, self).__init__(parameter=None, address=address)
 
@@ -407,7 +407,7 @@ class IF(Query):
         :param address: int
         :param parameter_instance: int
         """
-        
+
         # init header (equal for get and set queries)
         super(IF, self).__init__(parameter=None,
                          address=address,
@@ -481,7 +481,7 @@ class ACK(MeFrame):
     ACK command sent by the device.
     """
     _SOURCE = "!"
-    
+
     def decompose(self, frame_bytes):
         """
         Takes bytes as input and builds the instance.
@@ -490,10 +490,10 @@ class ACK(MeFrame):
         """
         frame_bytes = self._SOURCE.encode() + frame_bytes
         self._decompose_header(frame_bytes)
-        
+
         frame = frame_bytes.decode()
         self.CRC = int(frame[-4:], 16)
-        
+
 
 class IFResponse(MeFrame):
     """
@@ -624,7 +624,7 @@ class MeComCommon:
 
     def _inc(self):
         self.SEQUENCE_COUNTER += 1
-        # sequence in controller is int16 and overflows 
+        # sequence in controller is int16 and overflows
         self.SEQUENCE_COUNTER = self.SEQUENCE_COUNTER % (2**16)
 
     @staticmethod
@@ -657,9 +657,9 @@ class MeComCommon:
             vb = self._execute(VB(parameter=parameter, start_position=0, max_nread=1023, *args, **kwargs))
             return vb
         else:
-        # execute query
-        vr = self._execute(VR(parameter=parameter, *args, **kwargs))
-        return vr
+            # execute query
+            vr = self._execute(VR(parameter=parameter, *args, **kwargs))
+            return vr
 
     def _get_raw(self, parameter_id, parameter_format, *args, **kwargs):
         """
@@ -767,7 +767,7 @@ class MeComCommon:
         # check if value setting has succeeded
         #
         # Not necessary as we get an acknowledge response or Value is out of range
-        # exception when an invalid value was passed. 
+        # exception when an invalid value was passed.
         # current implementation also often fails due to rounding, e.g. setting 1.0
         # but returning 0.999755859375 when performing a self.get_parameter
         # value_set = self.get_parameter(parameter_id=parameter_id, parameter_name=parameter_name, *args, **kwargs)
@@ -792,21 +792,21 @@ class MeComCommon:
         # check if value setting has succeeded
         #
         # Not necessary as we get an acknowledge response or Value is out of range
-        # exception when an invalid value was passed. 
+        # exception when an invalid value was passed.
         # current implementation also often fails due to rounding, e.g. setting 1.0
         # but returning 0.999755859375 when performing a self.get_parameter
         # value_set = self.get_parameter(parameter_id=parameter_id, parameter_name=parameter_name, *args, **kwargs)
 
         # return True if we got an ACK
         return type(vs.RESPONSE) == ACK
-    
+
     def reset_device(self,*args, **kwargs):
         """
         Resets the device after an error has occured
         """
         rs = self._execute(RS(*args, **kwargs))
         return type(rs.RESPONSE) == ACK
-    
+
     def info(self,*args, **kwargs):
         """
         Resets the device after an error has occured
@@ -849,7 +849,7 @@ class MeComCommon:
 
         # return address and status
         return status_name
-    
+
     # enable or disable auto saving to flash
     enable_autosave = partialmethod(set_parameter, value=0, parameter_name="Save Data to Flash")
     disable_autosave = partialmethod(set_parameter, value=1, parameter_name="Save Data to Flash")
