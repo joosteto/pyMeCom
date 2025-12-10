@@ -1025,7 +1025,7 @@ class MeCom(MeComSerial):
 if __name__ == "__main__":
     import argparse
 
-    def setParamStr(mc, paramStr):
+    def setParamStr(mc, paramStr, *args, **kwargs):
         m=paramStr.split('=', 1)
         varStr=m[0].strip()
         valStr=m[1].strip()
@@ -1035,15 +1035,20 @@ if __name__ == "__main__":
             val=float(valStr)
         elif var.format=="INT32":
             val=int(valStr)
-        mc.set_parameter(value=val, parameter_name=varStr)
+        mc.set_parameter(value=val, parameter_name=varStr, *args, **kwargs)
 
-    def getParamStr(mc, varStr):
+    def getParamStr(mc, varStr, *args, **kwargs):
+        pl=ParameterList()
         for vs in varStr.split(','):
             try:
-                val=mc.get_parameter(parameter_name=vs)
-                print(f'{vs} = {val}')
+                parameter=pl.get_by_id(int(vs))
+            except ValueError:
+                parameter=pl.get_by_name(vs)
             except UnknownParameter as inst:
                 print(f'UnknownParameter: "{vs}"')
+                return
+            val=mc.get_parameter(parameter_id=parameter.id, *args, **kwargs)
+            print(f'{parameter.id:4d}: {parameter.name:20s} = {val}')
 
 
     with MeComSerial("/dev/ttyUSB0") as mc:
@@ -1055,19 +1060,23 @@ if __name__ == "__main__":
         parser=argparse.ArgumentParser(prog='mecom command line example interface')
         parser.add_argument('-s', '--set', help='set parameter. Example: --set "Target Object Temperature=23" (don\'t forget the quotes)')
         parser.add_argument('-g', '--get', help='get parameter. Example: --get "Object Temperature"')
+        parser.add_argument('--address', type=int, default=address, help='address of the controller')
+        parser.add_argument('--instance', type=int, default=1, help='Parameter Instance. If the controller has multiple sensors/outputs for a parameter, use --instance to address them.')
 
         args=parser.parse_args()
         if args.set is not None:
-            setParamStr(mc, args.set)
-        elif args.get is not None:
-            getParamStr(mc, args.get)
+            setParamStr(mc, args.set, address=args.address, parameter_instance=args.instance)
+        if args.get is not None:
+
+            for get in args.get.split(','):
+                getParamStr(mc, get.strip(), address=args.address, parameter_instance=args.instance)
         else:
             # get object temperature
-            temp = mc.get_parameter(parameter_name="Object Temperature", address=address)
+            temp = mc.get_parameter(parameter_name="Object Temperature", address=address, parameter_instance=args.instance)
             print("query for object temperature, measured temperature {}C".format(temp))
 
             # is the loop stable?
-            stable_id = mc.get_parameter(parameter_name="Temperature is Stable", address=address)
+            stable_id = mc.get_parameter(parameter_name="Temperature is Stable", address=address, parameter_instance=args.instance)
             if stable_id == 0:
                 stable = "temperature regulation is not active"
             elif stable_id == 1:
@@ -1098,4 +1107,3 @@ if __name__ == "__main__":
             # mc.reset_device()
 
             print("leaving with-statement, connection will be closed")
-
