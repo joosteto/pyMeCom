@@ -1109,7 +1109,7 @@ if __name__ == "__main__":
                 parameter=pl.get_by_id(int(vs))
             except ValueError:
                 try:
-                parameter=pl.get_by_name(vs)
+                    parameter=pl.get_by_name(vs)
                 except UnknownParameter:
                     print(f'Unknown parameter: "{vs}"')
                     return None
